@@ -1,5 +1,21 @@
 require 'tempfile'
 require 'rbconfig'
+require 'rspec'
+
+RSpec::Matchers.define :be_successful_exit do
+  match do |actual_exit_status|
+    @actual_exit_status = actual_exit_status
+    actual_exit_status == 0
+  end
+
+  failure_message_for_should do
+    "expected zero (success) exit status but was #{@actual_exit_status}"
+  end
+
+  failure_message_for_should_not do
+    "expected non-zero (failure) exit status but was #{@actual_exit_status}"
+  end
+end
 
 module Aruba
 module Api

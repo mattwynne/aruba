@@ -120,9 +120,9 @@ end
 Then /^it should (pass|fail) with:$/ do |pass_fail, partial_output|
   Then "the output should contain:", partial_output
   if pass_fail == 'pass'
-    @last_exit_status.should == 0
+    @last_exit_status.should be_successful_exit
   else
-    @last_exit_status.should_not == 0
+    @last_exit_status.should_not be_successful_exit
   end
 end
 
