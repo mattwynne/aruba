@@ -1,7 +1,3 @@
-Given /^I have a local file named "([^"]*)" with:$/ do |filename, content|
-  File.open(filename, 'w') {|io| io.write(content)}
-end
-
 When /^I do aruba (.*)$/ do |aruba_step|
   begin
     When(aruba_step)
@@ -10,15 +6,19 @@ When /^I do aruba (.*)$/ do |aruba_step|
   end
 end
 
-Then /^the output should contain the JRuby version$/ do
-  pending "This must be manually run in JRuby" unless defined?(JRUBY_VERSION)
-  Then %{the output should contain "#{JRUBY_VERSION}"}
-end
-
-Then /^the output should contain the current Ruby version$/ do
-  Then %{the output should contain "#{RUBY_VERSION}"}
+# Useful for debugging timing problems
+When /^sleep (\d+)$/ do |time|
+  sleep time.to_i
 end
 
 Then /^aruba should fail with "([^"]*)"$/ do |error_message|
-  @aruba_exception.message.should =~ compile_and_escape(error_message)
+  @aruba_exception.message.should include(unescape(error_message))
+end
+
+Then /^the following step should fail with Spec::Expectations::ExpectationNotMetError:$/ do |multiline_step|
+  proc {steps multiline_step}.should raise_error(RSpec::Expectations::ExpectationNotMetError)
+end
+
+Then /^the output should be (\d+) bytes long$/ do |length|
+  all_output.chomp.length.should == length.to_i
 end

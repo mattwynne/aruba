@@ -8,7 +8,7 @@ Feature: Output
     When I run "neverever gonna work"
     Then the output should contain:
     """
-    sh: neverever: command not found
+    No such file or directory - neverever
     """
 
   Scenario: Detect subset of one-line output
@@ -39,10 +39,14 @@ Feature: Output
 
   Scenario: Detect exact one-line output
     When I run "ruby -e 'puts \"hello world\"'"
-    Then the output should contain exactly "hello world\n"
+    Then the output should contain exactly:
+      """
+      hello world
+      
+      """
 
   Scenario: Detect exact multiline output
-    When I run "ruby -e 'puts \"hello\\nworld\"'"
+    When I run "ruby -e 'puts "hello\nworld"'"
     Then the output should contain exactly:
       """
       hello
@@ -58,7 +62,7 @@ Feature: Output
 
   @announce
   Scenario: Detect subset of multiline output with regex
-    When I run "ruby -e 'puts \"hello\\nworld\\nextra line1\\nextra line2\\nimportant line\"'"
+    When I run "ruby -e 'puts "hello\nworld\nextra line1\nextra line2\nimportant line"'"
     Then the output should match:
       """
       he..o
@@ -69,10 +73,19 @@ Feature: Output
 
   @announce
   Scenario: Match passing exit status and partial output
-    When I run "ruby -e 'puts \"hello\\nworld\"'"
+    When I run "ruby -e 'puts "hello\nworld"'"
     Then it should pass with:
       """
       hello
+      """
+
+  Scenario: Match passing exit status and exact output
+    When I run "ruby -e 'puts "hello\nworld"'"
+    Then it should pass with exactly:
+      """
+      hello
+      world
+
       """
 
   @announce-stdout
@@ -83,14 +96,110 @@ Feature: Output
       hello
       """
 
+  Scenario: Match failing exit status and exact output
+    When I run "ruby -e 'puts "hello\nworld";exit 99'"
+    Then it should fail with exactly:
+      """
+      hello
+      world
+
+      """
+
+  @announce-stdout
+  Scenario: Match failing exit status and output with regex
+    When I run "ruby -e 'puts \"hello\\nworld\";exit 99'"
+    Then it should fail with regex:
+      """
+      hello\s*world
+      """
+
   @announce-cmd
   Scenario: Match output in stdout
     When I run "ruby -e 'puts \"hello\\nworld\"'"
     Then the stdout should contain "hello"
     Then the stderr should not contain "hello"
 
-  @announce-stderr
-  Scenario: Match output in stderr
-    When I run "ruby -e 'STDERR.puts \"hello\\nworld\";exit 99'"
-    Then the stderr should contain "hello"
-    Then the stdout should not contain "hello"
+  @announce
+  Scenario: Match output on several lines
+    When I run "ruby -e 'puts %{GET /}'"
+    Then the stdout should contain:
+      """
+      GET /
+      """
+
+  Scenario: Match output on several lines using quotes
+    When I run "ruby -e 'puts %{GET "/"}'"
+    Then the stdout should contain:
+      """
+      GET "/"
+      """
+
+  Scenario: Match output in stdout
+    When I run "ruby -e 'puts \"hello\\nworld\"'"
+    Then the stdout should contain "hello"
+    Then the stderr should not contain "hello"
+
+  Scenario: Detect output from all processes
+    When I run "ruby -e 'puts \"hello world!\"'"
+    And I run "ruby -e 'puts gets.chomp.reverse'" interactively
+    And I type "hello"
+    Then the output should contain exactly:
+      """
+      hello world!
+      olleh
+
+      """
+
+  Scenario: Detect stdout from all processes
+    When I run "ruby -e 'puts \"hello world!\"'"
+    And I run "ruby -e 'puts gets.chomp.reverse'" interactively
+    And I type "hello"
+    Then the stdout should contain:
+      """
+      hello world!
+      olleh
+      """
+    And the stderr should not contain:
+      """
+      hello world!
+      olleh
+      """
+
+  Scenario: Detect stderr from all processes
+    When I run "ruby -e 'STDERR.puts \"hello world!\"'"
+    And I run "ruby -e 'STDERR.puts gets.chomp.reverse'" interactively
+    And I type "hello"
+    Then the stderr should contain:
+      """
+      hello world!
+      olleh
+      """
+    And the stdout should not contain:
+      """
+      hello world!
+      olleh
+      """
+
+  Scenario: Detect output from named source
+    When I run "ruby -e 'puts :simple'"
+    And I run "ruby -e 'puts gets.chomp'" interactively
+    And I type "interactive"
+    Then the output from "ruby -e 'puts :simple'" should contain "simple"
+    And the output from "ruby -e 'puts gets.chomp'" should not contain "simple"
+
+  Scenario: Detect stdout from named source
+    When I run "ruby -e 'puts :hello'"
+    And I run "ruby -e 'puts :goodbye'"
+    Then the stdout from "ruby -e 'puts :hello'" should contain "hello"
+    And the stderr from "ruby -e 'puts :hello'" should not contain "hello"
+    And the stdout from "ruby -e 'puts :goodbye'" should not contain "hello"
+
+  Scenario: Detect stderr from named source
+    When I run "ruby -e 'STDERR.puts :hello'"
+    And I run "ruby -e 'puts :goodbye'"
+    Then the stderr from "ruby -e 'STDERR.puts :hello'" should contain "hello"
+    And the stdout from "ruby -e 'STDERR.puts :hello'" should not contain "hello"
+    And the stderr from "ruby -e 'puts :goodbye'" should not contain "hello"
+
+  @wip
+  Scenario: Detect output from named source with custom name

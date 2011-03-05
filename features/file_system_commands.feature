@@ -67,13 +67,41 @@ Feature: file system commands
   Scenario: Check for absence of files
     Then the following files should not exist:
       | lorem/ipsum/dolor |
-      
+
+  Scenario: Check for presence of a single file
+    Given an empty file named "lorem/ipsum/dolor"
+    Then a file named "lorem/ipsum/dolor" should exist
+
+  Scenario: Check for absence of a single file
+    Then a file named "lorem/ipsum/dolor" should not exist
+
   Scenario: Check for presence of a subset of directories
     Given a directory named "foo/bar"
     Given a directory named "foo/bla"
     Then the following directories should exist:
       | foo/bar |
       | foo/bla |
+
+  Scenario: check for absence of directories
+    Given a directory named "foo/bar"
+    Given a directory named "foo/bla"
+    Then the following step should fail with Spec::Expectations::ExpectationNotMetError:
+    """
+    Then the following directories should not exist:
+      | foo/bar/ |
+      | foo/bla/ |
+    """
+
+  Scenario: Check for presence of a single directory
+    Given a directory named "foo/bar"
+    Then a directory named "foo/bar" should exist
+
+  Scenario: Check for absence of a single directory
+    Given a directory named "foo/bar"
+    Then the following step should fail with Spec::Expectations::ExpectationNotMetError:
+      """
+      Then a directory named "foo/bar" should not exist
+      """
 
   Scenario: Check file contents
     Given a file named "foo" with:
@@ -82,3 +110,19 @@ Feature: file system commands
       """
     Then the file "foo" should contain "hello world"
     And the file "foo" should not contain "HELLO WORLD"
+
+  Scenario: Check file contents with regexp
+    Given a file named "foo" with:
+      """
+      hello world
+      """
+    Then the file "foo" should match /hel.o world/
+    And the file "foo" should not match /HELLO WORLD/
+
+  Scenario: Remove file
+    Given a file named "foo" with:
+      """
+      hello world
+      """
+    When I remove the file "foo"
+    Then the file "foo" should not exist
